@@ -7,6 +7,7 @@ class MultipleAgent():
     def __init__(self):
         self.origin_agent = OriginAgent()
         self.final_agent = None
+    """多智能体接口"""
     async def run(self,query):
         async for word in self.origin_agent.ask_agent(query):
             yield word

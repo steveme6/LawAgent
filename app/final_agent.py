@@ -5,6 +5,7 @@ class FinalAgent(OriginAgent):
     def __init__(self, last_result:str,prompt="你是一个总结智能体，你需要总结传递给你的内容\n\n{input}"):
         super().__init__(prompt)
         self.last_result = last_result
+    """总结接口"""
     async def conclusion(self):
         async for chunk in self.chain.astream({"input": self.last_result}):
             yield chunk
