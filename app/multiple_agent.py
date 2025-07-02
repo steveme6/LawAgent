@@ -7,6 +7,7 @@ class MultipleAgent():
     def __init__(self):
         self.origin_agent = OriginAgent()
         self.final_agent = None
+
     """多智能体接口"""
     async def run(self,query):
         async for word in self.origin_agent.ask_agent(query):
@@ -15,8 +16,9 @@ class MultipleAgent():
         self.final_agent = FinalAgent(self.origin_agent.result)
         async for chunk in self.final_agent.conclusion():
             yield chunk
+
 async def main():
-    """<UNK>"""
+    """测试main"""
     agent = MultipleAgent()
     async for chunk in agent.run(query="你好，我叫小明，英语考了20分，我该怎么办"):
         print(chunk, end="", flush=True)

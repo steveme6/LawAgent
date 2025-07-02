@@ -11,8 +11,8 @@ from config import get_config
 class OriginAgent:
     def __init__(self,prompt="你是一个智能助手，使用用中文回答\n\n{input}"):
         """初始化聊天模型"""
-        baseurl=get_config("ollama", "BASE_URL")
-        model=get_config("ollama", "MODEL")
+        baseurl=get_config("ollama", "BASE_URL","../config/config.ini")
+        model=get_config("ollama", "MODEL","../config/config.ini")
         self.chat_model = ChatOllama(
             base_url=baseurl,
             model=model,
