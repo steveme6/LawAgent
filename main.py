@@ -375,7 +375,7 @@ if __name__ == '__main__':
 
         # 为每个分类爬取法案
         all_category_data = {}
-        for i, category in enumerate(law_categories[:], 1):
+        for i, category in enumerate(law_categories[82:], 83):
             print(f"\n处理分类 {i}/{len(law_categories)}: {category}")
 
             # 提取该分类的法案总数
@@ -439,18 +439,9 @@ if __name__ == '__main__':
                     print("返回主页面失败")
                 continue
 
-        # 保存所有数据的汇总
-        summary_data = {
-            'total_categories': len(all_category_data),
-            'categories': list(all_category_data.keys()),
-            'total_laws': sum(data['law_count'] for data in all_category_data.values()),
-            'data': all_category_data
-        }
-        save_json([summary_data], "all_laws_summary.json")
 
         print(f"\n=== 爬取完成 ===")
         print(f"处理了 {len(all_category_data)} 个分类")
-        print(f"总共爬取了 {summary_data['total_laws']} 个法案")
 
     except Exception as e:
         print(f"程序执行出错: {e}")
