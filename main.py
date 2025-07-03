@@ -375,14 +375,11 @@ if __name__ == '__main__':
 
         # 为每个分类爬取法案
         all_category_data = {}
-        for i, category in enumerate(law_categories[82:], 83):
+        for i, category in enumerate(law_categories[76:], 77):
             print(f"\n处理分类 {i}/{len(law_categories)}: {category}")
 
             # 提取该分类的法案总数
             total_laws_count = extract_total_laws_from_category(category)
-            if total_laws_count == 0:
-                print(f"警告: 无法从分类名称 '{category}' 中提取法案总数，使用默认值100")
-                total_laws_count = 100  # 默认值
 
             try:
                 # 确保返回主页面（如果不在主页面的话）
