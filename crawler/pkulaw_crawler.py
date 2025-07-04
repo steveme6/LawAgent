@@ -53,8 +53,8 @@ class PKULawCrawler(BaseCrawler):
         self.categories = {}  # 存储分类名称到URL的映射
         self.category_loaded = False  # 分类是否已加载
 
-        # 确保输出目录存在
-        os.makedirs(self.output_dir, exist_ok=True)
+        # 注释掉自动创建目录的代码，避免在错误位置新建文件夹
+        # os.makedirs(self.output_dir, exist_ok=True)
 
     def load_categories(self):
         """

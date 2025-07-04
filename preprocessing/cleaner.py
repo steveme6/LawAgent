@@ -3,8 +3,9 @@ import json
 import hashlib
 import html
 import os
+import glob
 from bs4 import BeautifulSoup
-from langchain.schema import Document
+from langchain_core.documents import Document
 from typing import Dict, List
 
 class LawCleaner:
@@ -147,7 +148,82 @@ class LawCleaner:
 
 if __name__ == "__main__":
     cleaner = LawCleaner()
-    cleaner.clean_laws_file(
-        "laws_xianfa_2552.json",  # 你的测试文件名
-        "vector_data/processed/laws_cleaned.json"
-    )
+
+    # 输入目录：data/raw
+    input_dir = "../data/raw"
+
+    # 输出目录：当前 preprocessing 目录
+    output_dir = "."
+
+    # 汇总输出文件
+    consolidated_output = "all_laws_cleaned.json"
+
+    # 获取所有 JSON 文件
+    json_files = glob.glob(os.path.join(input_dir, "*.json"))
+
+    print(f"[INFO] 发现 {len(json_files)} 个JSON文件需要处理")
+
+    processed_count = 0
+    failed_count = 0
+    all_consolidated_documents = []  # 用于汇总所有文档
+
+    for input_file in json_files:
+        # 获取文件名（不包含路径和扩展名）
+        filename = os.path.basename(input_file)
+
+        print(f"\n[INFO] 正在处理: {filename}")
+
+        try:
+            # 重置处理过的ID集合，避免跨文件重复检测
+            cleaner.processed_ids.clear()
+
+            # 处理文件并获取文档
+            with open(input_file, 'r', encoding='utf-8') as f:
+                raw_data = json.load(f)
+
+            current_documents = []
+            if isinstance(raw_data, dict) and 'laws' in raw_data:
+                print(f"[DEBUG] 处理分类: {raw_data.get('category_name', '')}")
+                docs = cleaner.clean_laws_from_category(raw_data)
+                current_documents.extend(docs)
+            elif isinstance(raw_data, list) and raw_data and 'laws' in raw_data[0]:
+                for idx, category in enumerate(raw_data):
+                    print(f"[DEBUG] 处理分类: {category.get('category_name', '')} (第{idx+1}类)")
+                    docs = cleaner.clean_laws_from_category(category)
+                    current_documents.extend(docs)
+            else:
+                print("[ERROR] 输入数据不是期望的分类-法规列表结构")
+                continue
+
+            print(f"[DEBUG] 当前文件生成 {len(current_documents)} 个Document")
+
+            # 转换为可序列化的格式并添加到汇总列表
+            output_data = [
+                {"page_content": doc.page_content, "metadata": doc.metadata}
+                for doc in current_documents
+            ]
+
+            all_consolidated_documents.extend(output_data)
+            processed_count += 1
+            print(f"[SUCCESS] 成功处理: {filename}")
+
+        except Exception as e:
+            print(f"[ERROR] 处理文件 {filename} 时出错: {e}")
+            failed_count += 1
+            continue
+
+    # 保存汇总文件
+    try:
+        consolidated_path = os.path.join(output_dir, consolidated_output)
+        with open(consolidated_path, 'w', encoding='utf-8') as f:
+            json.dump(all_consolidated_documents, f, ensure_ascii=False, indent=2)
+        print(f"\n[INFO] 汇总文件已保存: {consolidated_output}")
+        print(f"[INFO] 汇总文件包含 {len(all_consolidated_documents)} 条Document")
+    except Exception as e:
+        print(f"[ERROR] 保存汇总文件时出错: {e}")
+
+    print(f"\n[SUMMARY] 批量处理完成:")
+    print(f"[SUMMARY] 成功处理: {processed_count} 个文件")
+    print(f"[SUMMARY] 处理失败: {failed_count} 个文件")
+    print(f"[SUMMARY] 总文件数: {len(json_files)} 个文件")
+    print(f"[SUMMARY] 汇总文档总数: {len(all_consolidated_documents)} 条")
