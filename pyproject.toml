@@ -1,7 +1,11 @@
+[build-system]
+requires = ["setuptools>=65.0.0","wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "lawagent"
 version = "0.1.0"
-description = "Add your description here"
+description = "LawAgent Package"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -109,3 +113,5 @@ dependencies = [
     "yarl==1.20.1",
     "zstandard==0.23.0",
 ]
+[tool.setuptools]
+packages = ["app"]

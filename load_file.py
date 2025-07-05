@@ -7,15 +7,15 @@ from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 import faiss
-from config import get_config
+from app.config import get_config
 from typing import Optional
 
 
 class FaissEmbeddings:
     def __init__(self, folder_path: Optional[str] = None):
         """初始化"""
-        base_url = get_config("ollama", "BASE_URL", "config/config_embedding.ini")
-        model = get_config("ollama", "MODEL", "config/config_embedding.ini")
+        base_url = get_config("ollama", "BASE_URL", "app/config/config_embedding.ini")
+        model = get_config("ollama", "MODEL", "app/config/config_embedding.ini")
         self.embeddings = OllamaEmbeddings(base_url=base_url, model=model)
 
         if folder_path:
