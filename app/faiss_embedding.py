@@ -4,7 +4,7 @@ from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 import faiss
-from config import get_config
+from app.config_parser import get_config
 from typing import Optional
 
 
