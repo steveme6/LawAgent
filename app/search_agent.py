@@ -32,7 +32,7 @@ class SearchAgent:
 
 async def main():
     search_agent = SearchAgent("/home/admin/LawAgent/app/faiss_db","law_index")
-    results=await search_agent.search(" 我国最低工资标准有")
+    results=await search_agent.search(" 试用期最多可以约定多久")
     if results and len(results)<3:
         for i in range (len(results)):
             print(results[i])
