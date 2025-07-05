@@ -1,113 +1,122 @@
 import re
 import json
-import hashlib
-import html
 import os
 import glob
-from bs4 import BeautifulSoup
 from langchain_core.documents import Document
 from typing import Dict, List
 
 class LawCleaner:
     def __init__(self):
         self.article_pattern = re.compile(r'(第[一二三四五六七八九十百千0-9]+条)')
-        self.chapter_pattern = re.compile(r'(第[一二三四五六七八九十百千0-9]+章[^\n]*)')
-        self.section_pattern = re.compile(r'(第[一二三四五六七八九十百千0-9]+节[^\n]*)')
-        self.processed_ids = set()
+        self.chapter_pattern = re.compile(r'(第[一二三四五六七八九十百千0-9]+章)')
 
-    def clean_html(self, html_text: str) -> str:
+    def clean_text(self, text: str) -> str:
+        """清理文本内容，处理换行符和空白字符"""
         try:
-            soup = BeautifulSoup(html_text, 'html.parser')
-            for script in soup(["script", "style"]):
-                script.decompose()
-            text = soup.get_text()
-            text = html.unescape(text)
+            # 替换\n\r和\r\n为标准换行符
+            text = text.replace('\n\r', '\n').replace('\r\n', '\n').replace('\r', '\n')
+            # 替换全角空格为半角空格
             text = text.replace('　', ' ')
-            text = re.sub(r'\s+', ' ', text)
-            return text.strip()
+            # 规范化空白字符，但保留换行符
+            lines = text.split('\n')
+            cleaned_lines = []
+            for line in lines:
+                # 去掉每行首尾空格，但保留行间结构
+                cleaned_line = re.sub(r'[ \t]+', ' ', line.strip())
+                cleaned_lines.append(cleaned_line)
+            return '\n'.join(cleaned_lines).strip()
         except Exception as e:
-            print(f"[ERROR] clean_html: {e}")
-            return str(html_text)
+            print(f"[ERROR] clean_text: {e}")
+            return str(text)
 
-    def split_articles(self, text: str) -> List[tuple]:
+    def split_articles(self, text: str) -> List[Dict[str, str]]:
+        """
+        根据“第x条”拆分法律文本，并提取章节信息。
+        """
+        has_articles = self.article_pattern.search(text)
+        if not has_articles:
+            return [{"text": text, "article_number": "", "chapter": ""}]
+
         articles = []
-        current_chapter = ""
-        current_section = ""
         buffer = []
-        article_number = ""
         lines = text.split('\n')
+        current_chapter = ""
+
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-            chap_match = self.chapter_pattern.match(line)
-            if chap_match:
-                current_chapter = chap_match.group(1)
-                continue
-            sec_match = self.section_pattern.match(line)
-            if sec_match:
-                current_section = sec_match.group(1)
-                continue
+
+            chapter_match = self.chapter_pattern.match(line)
+            if chapter_match:
+                current_chapter = chapter_match.group(1)
+
             art_match = self.article_pattern.match(line)
             if art_match:
-                if buffer and article_number:
-                    articles.append((current_chapter, current_section, ''.join(buffer).strip()))
-                article_number = art_match.group(1)
+                if buffer:
+                    article_text = '\n'.join(buffer).strip()
+                    article_number_match = self.article_pattern.search(article_text)
+                    article_number = article_number_match.group(1) if article_number_match else ""
+                    articles.append({
+                        "text": article_text,
+                        "article_number": article_number,
+                        "chapter": current_chapter
+                    })
                 buffer = [line]
             else:
                 buffer.append(line)
-        if buffer and article_number:
-            articles.append((current_chapter, current_section, ''.join(buffer).strip()))
+        
+        if buffer:
+            article_text = '\n'.join(buffer).strip()
+            article_number_match = self.article_pattern.search(article_text)
+            article_number = article_number_match.group(1) if article_number_match else ""
+            articles.append({
+                "text": article_text,
+                "article_number": article_number,
+                "chapter": current_chapter
+            })
+            
         return articles
 
-    def generate_id(self, law_name: str, article_number: str, content: str) -> str:
-        content_hash = hashlib.md5(f"{law_name}_{article_number}_{content[:100]}".encode('utf-8')).hexdigest()
-        return content_hash
-
-    def clean_laws_from_category(self, category: Dict) -> List[Document]:
+    def clean_laws_from_category(self, category: Dict, is_split_file: bool = False) -> List[Document]:
         documents = []
         category_name = category.get('category_name', '')
         for law in category.get('laws', []):
             law_name = law.get('title') or law.get('metadata', {}).get('完整标题') or law.get('metadata', {}).get('title') or ''
-            law_url = law.get('url', '')
             meta = law.get('metadata', {})
             law_content = law.get('content', '')
-            if not isinstance(law_content, str):
-                if isinstance(law_content, dict):
-                    law_content = law_content.get('text') or law_content.get('zh') or next(iter(law_content.values()), '')
-                else:
-                    law_content = str(law_content)
             if not law_content or not law_name:
                 print(f"[WARN] 跳过空内容或无名法规: {law}")
                 continue
-            cleaned_content = self.clean_html(law_content)
+
+            cleaned_content = self.clean_text(law_content)
             articles = self.split_articles(cleaned_content)
-            if not articles:
-                articles = [("", "", cleaned_content)]
-            for chapter, section, article_text in articles:
-                article_number_match = self.article_pattern.search(article_text)
-                article_number = article_number_match.group(1) if article_number_match else ""
-                doc_id = self.generate_id(law_name, article_number, article_text)
-                if doc_id in self.processed_ids:
-                    print(f"[DEBUG] 跳过重复: {doc_id}")
+
+            for article_info in articles:
+                article_text = article_info["text"]
+                # 如果拆分后只有一个文档且内容为空，则跳过
+                if len(articles) == 1 and not article_text:
                     continue
-                self.processed_ids.add(doc_id)
+
                 metadata = {
                     "law_name": law_name,
-                    "chapter": chapter,
-                    "section": section,
-                    "article_number": article_number,
-                    "url": law_url,
-                    "id": doc_id,
-                    "source": "pkulaw",
-                    "category": category_name
+                    "category": category_name,
+                    "article_number": article_info["article_number"],
+                    "chapter": article_info["chapter"]
                 }
-                if isinstance(meta, dict):
-                    for k, v in meta.items():
-                        if k not in metadata:
-                            metadata[k] = v
+                if is_split_file:
+                    full_title = meta.get('完整标题') if isinstance(meta, dict) else None
+                    if full_title:
+                        metadata["完整标题"] = full_title
+
                 doc = Document(page_content=article_text, metadata=metadata)
-                print(f"[DEBUG] 添加法条: {law_name} {article_number} 长度: {len(article_text)}")
+                debug_info = f"添加法条: {law_name}"
+                if article_info['chapter']:
+                    debug_info += f" 章节: {article_info['chapter']}"
+                if article_info['article_number']:
+                    debug_info += f" 条文: {article_info['article_number']}"
+                debug_info += f" 长度: {len(article_text)}"
+                print(f"[DEBUG] {debug_info}")
                 documents.append(doc)
         return documents
 
@@ -155,9 +164,6 @@ if __name__ == "__main__":
     # 输出目录：当前 preprocessing 目录
     output_dir = "."
 
-    # 汇总输出文件
-    consolidated_output = "all_laws_cleaned.json"
-
     # 获取所有 JSON 文件
     json_files = glob.glob(os.path.join(input_dir, "*.json"))
 
@@ -165,18 +171,19 @@ if __name__ == "__main__":
 
     processed_count = 0
     failed_count = 0
-    all_consolidated_documents = []  # 用于汇总所有文档
 
     for input_file in json_files:
         # 获取文件名（不包含路径和扩展名）
         filename = os.path.basename(input_file)
+        filename_without_ext = os.path.splitext(filename)[0]
+
+        # 生成输出文件名
+        output_filename = f"{filename_without_ext}_cleaned.json"
+        output_path = os.path.join(output_dir, output_filename)
 
         print(f"\n[INFO] 正在处理: {filename}")
 
         try:
-            # 重置处理过的ID集合，避免跨文件重复检测
-            cleaner.processed_ids.clear()
-
             # 处理文件并获取文档
             with open(input_file, 'r', encoding='utf-8') as f:
                 raw_data = json.load(f)
@@ -184,12 +191,12 @@ if __name__ == "__main__":
             current_documents = []
             if isinstance(raw_data, dict) and 'laws' in raw_data:
                 print(f"[DEBUG] 处理分类: {raw_data.get('category_name', '')}")
-                docs = cleaner.clean_laws_from_category(raw_data)
+                docs = cleaner.clean_laws_from_category(raw_data, is_split_file=False)
                 current_documents.extend(docs)
             elif isinstance(raw_data, list) and raw_data and 'laws' in raw_data[0]:
                 for idx, category in enumerate(raw_data):
                     print(f"[DEBUG] 处理分类: {category.get('category_name', '')} (第{idx+1}类)")
-                    docs = cleaner.clean_laws_from_category(category)
+                    docs = cleaner.clean_laws_from_category(category, is_split_file=False)
                     current_documents.extend(docs)
             else:
                 print("[ERROR] 输入数据不是期望的分类-法规列表结构")
@@ -197,33 +204,70 @@ if __name__ == "__main__":
 
             print(f"[DEBUG] 当前文件生成 {len(current_documents)} 个Document")
 
-            # 转换为可序列化的格式并添加到汇总列表
-            output_data = [
-                {"page_content": doc.page_content, "metadata": doc.metadata}
-                for doc in current_documents
-            ]
+            # 检查是否需要拆分文件（条文数大于100）
+            if len(current_documents) > 100:
+                print(f"[INFO] 文档数量 {len(current_documents)} 超过100条，开始拆分文件")
 
-            all_consolidated_documents.extend(output_data)
+                # 计算需要拆分成多少个文件
+                chunk_size = 100
+                num_chunks = (len(current_documents) + chunk_size - 1) // chunk_size
+
+                # 重新处理原始数据，为拆分文件生成包含完整标题的文档
+                split_documents = []
+                if isinstance(raw_data, dict) and 'laws' in raw_data:
+                    docs = cleaner.clean_laws_from_category(raw_data, is_split_file=True)
+                    split_documents.extend(docs)
+                elif isinstance(raw_data, list) and raw_data and 'laws' in raw_data[0]:
+                    for category in raw_data:
+                        docs = cleaner.clean_laws_from_category(category, is_split_file=True)
+                        split_documents.extend(docs)
+
+                # 转换为可序列化的格式
+                split_output_data = [
+                    {"page_content": doc.page_content, "metadata": doc.metadata}
+                    for doc in split_documents
+                ]
+
+                for i in range(num_chunks):
+                    start_idx = i * chunk_size
+                    end_idx = min((i + 1) * chunk_size, len(split_output_data))
+                    chunk_data = split_output_data[start_idx:end_idx]
+
+                    # 生成拆分文件名
+                    if i == 0:
+                        # 第一个文件保持原名
+                        chunk_output_path = output_path
+                    else:
+                        # 后续文件添加_(1), _(2)等后缀
+                        chunk_filename = f"{filename_without_ext}_cleaned_({i}).json"
+                        chunk_output_path = os.path.join(output_dir, chunk_filename)
+
+                    # 保存拆分后的文件
+                    with open(chunk_output_path, 'w', encoding='utf-8') as f:
+                        json.dump(chunk_data, f, ensure_ascii=False, indent=2)
+
+                    print(f"[SUCCESS] 拆分文件 {i+1}/{num_chunks}: {os.path.basename(chunk_output_path)} (包含 {len(chunk_data)} 条Document)")
+
+                print(f"[SUCCESS] 文件拆分完成，共生成 {num_chunks} 个文件")
+            else:
+                # 文档数量不超过100，正常保存单个文件（不包含完整标题）
+                output_data = [
+                    {"page_content": doc.page_content, "metadata": doc.metadata}
+                    for doc in current_documents
+                ]
+
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    json.dump(output_data, f, ensure_ascii=False, indent=2)
+                print(f"[SUCCESS] 成功处理: {filename} -> {output_filename}")
+                print(f"[SUCCESS] 输出 {len(output_data)} 条Document")
+
             processed_count += 1
-            print(f"[SUCCESS] 成功处理: {filename}")
-
         except Exception as e:
             print(f"[ERROR] 处理文件 {filename} 时出错: {e}")
             failed_count += 1
             continue
 
-    # 保存汇总文件
-    try:
-        consolidated_path = os.path.join(output_dir, consolidated_output)
-        with open(consolidated_path, 'w', encoding='utf-8') as f:
-            json.dump(all_consolidated_documents, f, ensure_ascii=False, indent=2)
-        print(f"\n[INFO] 汇总文件已保存: {consolidated_output}")
-        print(f"[INFO] 汇总文件包含 {len(all_consolidated_documents)} 条Document")
-    except Exception as e:
-        print(f"[ERROR] 保存汇总文件时出错: {e}")
-
     print(f"\n[SUMMARY] 批量处理完成:")
     print(f"[SUMMARY] 成功处理: {processed_count} 个文件")
     print(f"[SUMMARY] 处理失败: {failed_count} 个文件")
     print(f"[SUMMARY] 总文件数: {len(json_files)} 个文件")
-    print(f"[SUMMARY] 汇总文档总数: {len(all_consolidated_documents)} 条")
