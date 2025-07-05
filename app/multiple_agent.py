@@ -2,17 +2,24 @@ import asyncio
 
 from app import FinalAgent
 from app import OriginAgent
-
+from app import SearchAgent
 class MultipleAgent():
     def __init__(self):
-        self.origin_agent = OriginAgent()
+        self.origin_agent = OriginAgent("你是一个智能助手，使用用中文回答\n\n，你需要提取和用户查询结果最接近的数据库查询结果以此来回答,如果查询没有结果，就自行对用户输入进行回答。用户输入和数据库查询结果：{input}")
         self.final_agent = None
-
+        self.search_agent = SearchAgent("/home/admin/LawAgent/app/faiss_db","law_index")
     """多智能体接口"""
     async def run(self,query):
-        async for word in self.origin_agent.ask_agent(query):
+        new_query = await self.search_agent.search(query)
+        if new_query:
+            if len(new_query) > 3:
+                new_query = new_query[:5]
+        yield "查询结果:\n"
+        yield new_query
+        yield "\n问答智能体:\n\n\n"
+        async for word in self.origin_agent.ask_agent("用户查询结果"+query+"数据库查询结果如下："+str(new_query)):
             yield word
-        yield "\n总结agent:\n"
+        yield "\n总结agent:\n\n\n"
         self.final_agent = FinalAgent(self.origin_agent.result)
         async for chunk in self.final_agent.conclusion():
             yield chunk
@@ -20,7 +27,7 @@ class MultipleAgent():
 async def main():
     """测试main"""
     agent = MultipleAgent()
-    async for chunk in agent.run(query="你好，我叫小明，英语考了20分，我该怎么办"):
+    async for chunk in agent.run(query="你好啊"):
         print(chunk, end="", flush=True)
 if __name__ == "__main__":
     asyncio.run(main())

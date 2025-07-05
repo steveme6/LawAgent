@@ -8,21 +8,24 @@ from config import get_config
 from typing import Optional
 
 
+
 class FaissEmbeddings:
-    def __init__(self, folder_path: Optional[str] = None):
+    def __init__(self, folder_path: Optional[str] = None,index_name: Optional[str] = None):
         """初始化"""
         base_url = get_config("ollama", "BASE_URL", "../config/config_embedding.ini")
         model = get_config("ollama", "MODEL", "../config/config_embedding.ini")
         self.embeddings = OllamaEmbeddings(base_url=base_url, model=model)
 
-        if folder_path:
+        if folder_path and index_name:
             self.vectorstore = FAISS.load_local(
                 folder_path=folder_path,
                 embeddings=self.embeddings,
-                allow_dangerous_deserialization=True
+                allow_dangerous_deserialization=True,
+                index_name=index_name,
             )
         else:
-            index = faiss.IndexFlatL2(len(self.embeddings.embed_query("123")))
+            embedding_dim = len(self.embeddings.embed_query("test"))
+            index = faiss.IndexHNSWFlat(embedding_dim, 32)
             self.vectorstore = FAISS(
                 embedding_function=self.embeddings,
                 index=index,
@@ -42,9 +45,9 @@ class FaissEmbeddings:
         """删除文档"""
         self.vectorstore.delete(uuids=uids)
 
-    def research(self, text: str, k: int = 1, fil: dict = None):
+    def research(self, text: str, k: int = 1, fil: str = None):
         """检索函数"""
-        results = self.vectorstore.similarity_search(query=text, k=k, filter=fil)
+        results = self.vectorstore.similarity_search_with_score(query=text, k=k, filter=fil)
         return results
 
     def save_to_file(self, folder_path: str,save_name: str):
@@ -54,12 +57,13 @@ class FaissEmbeddings:
             index_name=save_name  # 可自定义索引文件名
         )
 
-    def load_from_file(self, folder_path: str):
+    def load_from_file(self, folder_path: str,index_name: str):
         """从指定目录加载向量存储"""
         self.vectorstore = FAISS.load_local(
             folder_path=folder_path,
             embeddings=self.embeddings,
-            allow_dangerous_deserialization=True
+            allow_dangerous_deserialization=True,
+            index_name=index_name
         )
 
     def return_faiss_vectorstore(self):
@@ -71,6 +75,7 @@ def main():
     faiss_embeddings = FaissEmbeddings()
     faiss_embeddings.add_text("LangChain is the framework for building context-aware reasoning applications", str(
         uuid.uuid4()))
+    #faiss_embeddings.save_to_file("./","db_faiss")
     results=faiss_embeddings.research("langchain")
     print(results[0].page_content)
 
