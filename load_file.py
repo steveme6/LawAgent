@@ -135,8 +135,8 @@ def main():
     if all_documents:
         print(f"\n正在保存向量数据库...")
         try:
-            faiss_embeddings.save_to_file("../data/faiss_db", "law_index")
-            print("向量数据库已成功保存到 ../data/faiss_db/law_index")
+            faiss_embeddings.save_to_file("data/faiss_db", "law_index")
+            print("向量数据库已成功保存到 data/faiss_db/law_index")
 
             # 测试检索功能
             print("\n测试检索功能:")
