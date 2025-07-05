@@ -1,4 +1,5 @@
 import uuid
+import json
 from langchain_community.docstore import InMemoryDocstore
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
@@ -30,7 +31,7 @@ class FaissEmbeddings:
                 index_to_docstore_id={}
             )
 
-    def add_text(self, text: str,uid:str):
+    def add_text(self, text: str, uid: str):
         """加入文本，测试用"""
         self.vectorstore.add_texts([text], uuid=uid)
 
@@ -47,7 +48,7 @@ class FaissEmbeddings:
         results = self.vectorstore.similarity_search(query=text, k=k, filter=fil)
         return results
 
-    def save_to_file(self, folder_path: str,save_name: str):
+    def save_to_file(self, folder_path: str, save_name: str):
         """将向量存储保存到指定目录"""
         self.vectorstore.save_local(
             folder_path=folder_path,
@@ -67,44 +68,51 @@ class FaissEmbeddings:
         return self.vectorstore
 
 def main():
-    """测试"""
+    """加载法律文档数据到向量数据库"""
+    # 初始化 FaissEmbeddings
     faiss_embeddings = FaissEmbeddings()
-    faiss_embeddings.add_text("LangChain is the framework for building context-aware reasoning applications", str(
-        uuid.uuid4()))
-    results=faiss_embeddings.research("langchain")
-    print(results[0].page_content)
 
-    """测试相关函数"""
-    """
-    def add_text(self,text:str):
-        self.vectorstore.add_texts([text])
-    def add_document(self,texts:list):
-        self.vectorstore.add_documents(texts)
-    def retriever_text(self,text:str):
-        retrieve_a = self.vectorstore.as_retriever()
-        return retrieve_a.invoke(text)
-    """
-    """
-    document_1 = Document(
-    page_content="I had chocolate chip pancakes and scrambled eggs for breakfast this morning.",
-    metadata={"source": "tweet"},
-    )
-    document_2 = Document()
-    documents = [document_1, document_2]
-    uuids = [str(uuid4()) for _ in range(len(documents))]
-    """
+    # 从 JSON 文件加载数据
+    json_file_path = "../preprocessing/all_laws_cleaned.json"
 
+    try:
+        with open(json_file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
 
+        # 转换为 Document 对象列表
+        documents = []
+        uuids = []
 
-"""embeddings测试main"""
-"""
-def main():
-    text = "LangChain is the framework for building context-aware reasoning applications"
-    faiss_embeddings = FaissEmbeddings()
-    faiss_embeddings.add_text(text)
-    result = faiss_embeddings.retriever_text("What is LangChain?")
-    print(result[0].page_content)
-"""
+        for item in data:
+            doc = Document(
+                page_content=item['page_content'],
+                metadata=item['metadata']
+            )
+            documents.append(doc)
+            uuids.append(str(uuid.uuid4()))
+
+        # 批量添加文档到向量数据库
+        print(f"正在添加 {len(documents)} 个文档到向量数据库...")
+        faiss_embeddings.add_doc(documents, uuids)
+
+        # 保存向量数据库到文件
+        faiss_embeddings.save_to_file("../data/faiss_db", "law_index")
+        print("向量数据库已成功保存到 ../data/faiss_db/law_index")
+
+        # 测试检索功能
+        print("\n测试检索功能:")
+        results = faiss_embeddings.research("不动产登记", k=3)
+        for i, result in enumerate(results):
+            print(f"结果 {i+1}: {result.page_content[:100]}...")
+            print(f"法律名称: {result.metadata.get('law_name', '未知')}")
+            print("-" * 50)
+
+    except FileNotFoundError:
+        print(f"文件不存在: {json_file_path}")
+    except json.JSONDecodeError:
+        print(f"JSON 文件格式错误: {json_file_path}")
+    except Exception as e:
+        print(f"加载数据时发生错误: {e}")
 
 if __name__ == "__main__":
     main()
