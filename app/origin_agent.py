@@ -24,7 +24,8 @@ class OriginAgent:
 
         """简单总结链"""
         self.chain = self.prompt | self.chat_model | self.parser
-
+        """无解析器链"""
+        self.no_parser_chain = self.prompt | self.chat_model
         """对话id"""
         self.config = RunnableConfig(configurable={"session_id": str(uuid.uuid4())})
 
@@ -48,10 +49,11 @@ class OriginAgent:
     def get_session_history(self,session_id):
         """获取历史"""
         return SQLChatMessageHistory(session_id=session_id,connection=f'sqlite:///{self.database}')
+
     """给予final_agent的输入"""
     def get_session_history2(self,session_id):
         return self.result
-    """删除历史"""
+
     def delete_history(self,session_id):
         """删除历史"""
         conn = sqlite3.connect(self.database)
@@ -59,6 +61,10 @@ class OriginAgent:
         cursor.execute("DELETE FROM history WHERE session_id=?", (session_id,))
         conn.commit()
         conn.close()
+    def return_chain(self):
+        return self.chain
+    def return_no_parser_chain(self):
+        return self.no_parser_chain
 """测试main"""
 async def main():
     client = OriginAgent()
