@@ -109,6 +109,7 @@ def main():
     faiss_embeddings.add_text(text)
     result = faiss_embeddings.retriever_text("What is LangChain?")
     print(result[0].page_content)
+    
 """
 
 if __name__ == "__main__":
