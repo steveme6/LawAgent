@@ -6,13 +6,13 @@ from langchain_core.runnables import RunnableWithMessageHistory,RunnableConfig
 from langchain_ollama import ChatOllama
 import asyncio
 from langchain_community.chat_message_histories import SQLChatMessageHistory
-from app.config import get_config
+from app.config_parser import get_config
 """基本agent"""
 class OriginAgent:
     def __init__(self,prompt="你是一个智能助手，使用用中文回答\n\n{input}"):
         """初始化聊天模型"""
-        baseurl=get_config("ollama", "BASE_URL", "./config/config.ini")
-        model=get_config("ollama", "MODEL", "./config/config.ini")
+        baseurl=get_config("ollama", "BASE_URL", "../config/config.ini")
+        model=get_config("ollama", "MODEL", "../config/config.ini")
         self.chat_model = ChatOllama(
             base_url=baseurl,
             model=model,

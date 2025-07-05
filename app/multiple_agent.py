@@ -1,5 +1,4 @@
 import asyncio
-
 from app import FinalAgent
 from app import OriginAgent
 from app import SearchAgent
@@ -34,3 +33,4 @@ async def main():
         print(chunk, end="", flush=True)
 if __name__ == "__main__":
     asyncio.run(main())
+    """导入方式错误：multiple_agent.py中使用了from app import FinalAgent，这种绝对导入方式在作为主脚本运行时会出现问题。所以要在包外面"""
