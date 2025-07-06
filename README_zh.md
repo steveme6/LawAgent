@@ -1,4 +1,4 @@
-简体中文|[English](./README.md)
+简体中文|[English](./README.md)  
 本项目提供了一个用于法律的智能体，可以提供知识问答，采用faiss向量检索以及langchain。
 # 快速使用
 
