@@ -1,3 +1,4 @@
+import os
 import uuid
 import sqlite3
 from langchain_core.output_parsers import StrOutputParser
@@ -9,10 +10,10 @@ from langchain_community.chat_message_histories import SQLChatMessageHistory
 from app.config_parser import get_config
 """基本agent"""
 class OriginAgent:
-    def __init__(self,prompt="你是一个智能助手，使用用中文回答\n\n{input}"):
+    def __init__(self,database_url:str,config_url:str,prompt="你是一个智能助手，使用用中文回答\n\n{input}"):
         """初始化聊天模型"""
-        baseurl=get_config("ollama", "BASE_URL", "../config/config.ini")
-        model=get_config("ollama", "MODEL", "../config/config.ini")
+        baseurl=get_config("ollama", "BASE_URL", config_url)
+        model=get_config("ollama", "MODEL", config_url)
         self.chat_model = ChatOllama(
             base_url=baseurl,
             model=model,
@@ -30,7 +31,7 @@ class OriginAgent:
         self.config = RunnableConfig(configurable={"session_id": str(uuid.uuid4())})
 
         """sqlite3数据库"""
-        self.database = '../history_db/history.db'
+        self.database = database_url
 
         """历史链"""
         self.runnable_with_history = RunnableWithMessageHistory(
@@ -67,7 +68,9 @@ class OriginAgent:
         return self.no_parser_chain
 """测试main"""
 async def main():
-    client = OriginAgent()
+    config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config/config.ini"))
+    database_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../history_db/history.db"))
+    client = OriginAgent(config_url=config_path,database_url=database_path)
     while True:
         print("\nQuery (type 'quit' to exit):")
         try:
