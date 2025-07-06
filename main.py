@@ -1,6 +1,5 @@
 import asyncio
 import sys
-
 from app import FinalAgent
 from app import OriginAgent
 from app import SearchAgent
@@ -8,12 +7,12 @@ import os
 
 class MultipleAgent():
     def __init__(self):
-        self.config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config/config.ini"))
-        self.database_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../history_db/history.db"))
+        self.config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "./config/config.ini"))
+        self.database_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "./history_db/history.db"))
 
         self.origin_agent = OriginAgent(config_url=self.config_path, database_url=self.database_path, prompt="你是一个智能助手，使用用中文回答，你需要提取和用户查询结果最接近的数据库查询结果，以此来回答用户输入,注意，请重点关注用户输入！！！如果查询没有结果，就忽略查询，自行对用户输入进行回答。用户输入和数据库查询结果：{input}")
         self.final_agent = None
-        self.search_agent = SearchAgent("faiss_db","law_index", database_url=self.database_path, config_url=self.config_path)
+        self.search_agent = SearchAgent("./app/faiss_db","law_index", database_url=self.database_path, config_url=self.config_path)
     """多智能体接口"""
     async def run(self,query):
         new_query = await self.search_agent.search(query)
@@ -35,11 +34,17 @@ class MultipleAgent():
 
 async def main():
     """测试main"""
-    print(sys.path)
     agent = MultipleAgent()
-
-    async for chunk in agent.run(query="试用期"):
-        print(chunk, end="", flush=True)
+    while True:
+        print("\n请输入:\n> (type 'quit' to exit):")
+        try:
+            query = input().strip()
+            if query.lower() == "quit":
+                break
+            async for chunk in agent.run(query=query):
+                print(chunk, end="", flush=True)
+        except Exception as e:
+            print(f"Error: {str(e)}")
 if __name__ == "__main__":
     asyncio.run(main())
     """导入方式错误：multiple_agent.py中使用了from app import FinalAgent，这种绝对导入方式在作为主脚本运行时会出现问题。所以要在包外面"""

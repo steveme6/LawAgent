@@ -7,13 +7,11 @@ import faiss
 from app.config_parser import get_config
 from typing import Optional
 
-
-
 class FaissEmbeddings:
-    def __init__(self, folder_path: Optional[str] = None,index_name: Optional[str] = None):
+    def __init__(self, config_url:str,folder_path: Optional[str] = None,index_name: Optional[str] = None):
         """初始化"""
-        base_url = get_config("ollama", "BASE_URL", "../config/config_embedding.ini")
-        model = get_config("ollama", "MODEL", "../config/config_embedding.ini")
+        base_url = get_config("ollama", "BASE_URL", config_url)
+        model = get_config("ollama", "MODEL", config_url)
         self.embeddings = OllamaEmbeddings(base_url=base_url, model=model)
 
         if folder_path and index_name:
@@ -72,7 +70,7 @@ class FaissEmbeddings:
 
 def main():
     """测试"""
-    faiss_embeddings = FaissEmbeddings()
+    faiss_embeddings = FaissEmbeddings(config_url="../config/config_embedding.ini")
     faiss_embeddings.add_text("LangChain is the framework for building context-aware reasoning applications", str(
         uuid.uuid4()))
     #faiss_embeddings.save_to_file("./","db_faiss")
