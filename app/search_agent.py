@@ -23,11 +23,15 @@ class SearchAgent:
         print(str(output))
         new_output = str(output)
         search_result = self.embedding.research(new_output,k=128718,fil=fil)
-        results = []
+        first_results = []
+        page_results = []
+
         for i in range(len(search_result)):
             if new_output in search_result[i][0].metadata.get("law_name","") and new_output in search_result[i][0].page_content:
-                results.append(search_result[i][0])
-        return results
+                first_results.append(search_result[i][0])
+            elif new_output not in search_result[i][0].metadata.get("law_name","") and new_output in search_result[i][0].page_content:
+                page_results.append(search_result[i][0])
+        return [first_results,page_results]
 
 
 async def main():

@@ -17,9 +17,12 @@ class MultipleAgent():
     async def run(self,query):
         new_query = await self.search_agent.search(query)
         if new_query:
-            if len(new_query) > 3:
-                new_query = new_query[:2]
-
+            if len(new_query[0]) and len(new_query[1]) > 3:
+                new_query = new_query[0][:2]+new_query[1][:2]
+            elif len(new_query[0]) > 3 > len(new_query[1]):
+                new_query = new_query[0][:2]+new_query[1]
+            elif len(new_query[1]) > 3 > len(new_query[0]):
+                new_query = new_query[0]+new_query[1][:2]
         yield "查询agent查询结果:\n"
         yield new_query
 
