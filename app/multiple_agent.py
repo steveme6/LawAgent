@@ -35,10 +35,9 @@ class MultipleAgent():
 
 async def main():
     """测试main"""
-    print(sys.path)
     agent = MultipleAgent()
 
-    async for chunk in agent.run(query="试用期"):
+    async for chunk in agent.run(query="中华人民共和国开展对外援助时坚持哪些基本原则"):
         print(chunk, end="", flush=True)
 if __name__ == "__main__":
     asyncio.run(main())
