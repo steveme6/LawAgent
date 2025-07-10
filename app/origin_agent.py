@@ -17,7 +17,7 @@ class OriginAgent:
         self.chat_model = ChatOllama(
             base_url=baseurl,
             model=model,
-            num_ctx=4096
+            num_ctx=8192
         )
         self.result = ""
         self.prompt = ChatPromptTemplate.from_template(prompt)
