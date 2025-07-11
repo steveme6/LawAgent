@@ -65,3 +65,22 @@ class AgentDB:
                                final_response
                            ))
             conn.commit()
+    
+    # 获取所有记录
+    def select_all(self):
+        with sqlite3.connect(self.database_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''SELECT * FROM chat_history;''')
+            conn.commit()
+            row = cursor.fetchall()
+            return row
+
+    # 获取所有username
+    def get_usernames(self):
+        with sqlite3.connect(self.database_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''SELECT username FROM chat_history GROUP BY username;''')
+            conn.commit()
+            row = cursor.fetchall()
+            usernames = [row[0] for row in row]
+            return usernames
