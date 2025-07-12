@@ -50,14 +50,13 @@ const DefaultChat = defineComponent({
   },
   
   setup(props) {
-    console.log(props.chatId)
     const message = ref(defaultMessage);
     const mode = ref('bubble');
     const align = ref('leftRight');
 
     const fetchMessages = async () => {//网页取数据
     try {
-    const response = await fetch('http://localhost:8000/chat/talks');
+    const response = await fetch('http://47.94.240.154:8000/chat/talks');
     const data = await response.json();
     const records = data[props.chatId].record; // 假设你想要获取talk_001的记录
     message.value = records;
@@ -91,9 +90,10 @@ const onMessageSend = async (content, attachment) => {
         content: '',
       };
       message.value = [...message.value, assistantMessage];
+      // console.log(`http://47.94.240.154:8000/chat/${props.chatId}`)
 
       // 发起流式请求
-      const response = await fetch('http://47.94.240.154:8000/chat/talk_001', {
+      const response = await fetch(`http://47.94.240.154:8000/chat/${props.chatId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

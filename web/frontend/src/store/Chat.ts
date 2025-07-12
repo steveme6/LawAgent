@@ -12,7 +12,7 @@ export const useChatStore = defineStore('chat', () => {
   /* 2. 定义 action：去后端拉一次数据 */
   const fetchMessages = async () => {
     try {
-      const res   = await fetch('http://localhost:8000/chat/talks')
+      const res   = await fetch('http://47.94.240.154:8000/chat/talks')
       data.value  = await res.json()
     //   console.log('store 里的 data 已更新：', data.value)
     } catch (e) {
