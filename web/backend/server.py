@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import asyncio
+from collections import defaultdict
 
 
 from main import MultipleAgent
@@ -63,17 +64,17 @@ async def read_talks():
     rows = agent.agent_db.select_all()
     records = dict()
     for r in rows:
-        a_record = {'role': 'assistant', 'id': r[0], 'createAt': r[2], 'content': r[3]}
-        user_record = {'role': 'user', 'id': r[0], 'createAt': r[2], 'content': 'null'}
+        a_record = {'role': 'assistant', 'id': r[0], 'createAt': r[2], 'content': r[5]+"\n回答\n"+r[6]}
+        user_record = {'role': 'user', 'id': r[0], 'createAt': r[2], 'content': r[3]}
         if r[1] in records:
-            records[r[1]]['record'].append(a_record)
             records[r[1]]['record'].append(user_record)
+            records[r[1]]['record'].append(a_record)
         else:
             records[r[1]] = {
                 'ques': r[3],
-                'record': [a_record]
+                'record': [user_record]
             }
-            records[r[1]]['record'].append(user_record)
+            records[r[1]]['record'].append(a_record)
     return records
 
 # 获取所有对话
@@ -86,23 +87,29 @@ async def read_talk_id():
 @app.post("/chat/new_talks")
 async def new_talk():
     # 对话id
+    global new_id
     new_id = str(uuid.uuid4().hex)
     return new_id
 
 # 用户提出一个问题, 返回一个回答并存入数据库
 @app.post("/chat/{talk_id}")
 async def add_message_to_talk(talk_id: str, request: Request):
+    print(talk_id)
+    global new_id
     try:
         data = await request.json()
         content = data.get('content')
     except Exception as e:
         print(f"发生异常：{e}")
         return f"error: {e}"
-    async def generate_with_save(talk_id, content):
+    async def generate_with_save(talk_id : str, content):
         print(f"ques: {content}")
         try:
             talks = agent.agent_db.get_usernames()
             talks.append(new_id)
+            print(f"talk_id : {talk_id}")
+            print(f"new_id : {new_id}")
+            print(talks)
             if talk_id  in talks:
                 async for chunk in agent.run(query=content, username=str(talk_id)):
                     for char in chunk:
@@ -118,6 +125,7 @@ async def add_message_to_talk(talk_id: str, request: Request):
             for char in markdown:
                 yield char
                 await asyncio.sleep(0.05)  # 控制输出速度（可选）
+                # agent.agent_db.insert_history(talk_id, content, "test", "test", "test")
         print('done')
     return StreamingResponse(generate_with_save(talk_id, content), media_type="text/plain")
 
