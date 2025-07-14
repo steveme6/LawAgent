@@ -62,6 +62,7 @@ async def get_root():
 @app.get("/chat/talks")
 async def read_talks():
     rows = agent.agent_db.select_all()
+    # return rows
     records = dict()
     for r in rows:
         a_record = {'role': 'assistant', 'id': r[0], 'createAt': r[2], 'content': r[5]+"\n回答\n"+r[6]}
@@ -128,6 +129,13 @@ async def add_message_to_talk(talk_id: str, request: Request):
                 # agent.agent_db.insert_history(talk_id, content, "test", "test", "test")
         print('done')
     return StreamingResponse(generate_with_save(talk_id, content), media_type="text/plain")
+
+# 删除一个对话
+@app.delete("/chat/{talk_id}")
+async def delete_message_from_talk(talk_id: str):
+    print(talk_id)
+    agent.agent_db.delete_history(talk_id)
+    return True
 
 # 获取指定对话的历史记录
 @app.get("/chat/{talks_id}/records")

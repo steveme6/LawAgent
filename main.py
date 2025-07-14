@@ -36,6 +36,9 @@ class MultipleAgent():
         new_query = await self.search_agent.search(query)
         self.query = query
         self.username = username
+        self.search_results = ""
+        self.origin_response = ""
+        self.final_response = ""
         if new_query:
             if len(new_query[0]) > 3 and len(new_query[1]) > 3:
                 new_query = new_query[0][:1]+new_query[1][:1]
@@ -47,8 +50,8 @@ class MultipleAgent():
                 new_query = new_query[0]+new_query[1]
         self.search_results = str(new_query)
 
-        yield "查询agent查询结果:\n"
-        yield new_query
+        # yield "查询agent查询结果:\n"
+        # yield new_query
 
         yield "\n问答agent:\n\n\n"
         history_list = self.agent_db.select_query(username)

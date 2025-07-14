@@ -1,5 +1,5 @@
 <template>
-  <div class="main-content">
+  <div class="main-content center-layout">
     <div class="center-contain">
       <Demo :key="chatId" :chatId="chatId"/>
     </div>
@@ -31,5 +31,12 @@ const chatId = computed(() => route.params.id as string);
   justify-content: center; /* 水平居中 */
   align-items: center; /* 垂直居中 */
   box-sizing: border-box; /* 确保内边距和边框包含在宽度内 */
+}
+
+.center-layout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
 }
 </style>
