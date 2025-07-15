@@ -46,33 +46,49 @@
   const routeKey = ref(route.fullPath);
   onMounted(() => {chatStore.fetchMessages()})
 
-function forceCreateNewChat() {
+async function forceCreateNewChat() {
   if (route.path === '/createNewChat') {
-    // 1）先把 key 换成带时间戳的新值，强制销毁组件
-    routeKey.value = `/createNewChat?_t=${Date.now()}`;
-    // console.log('CreateNewChat 组件 mounted', Date.now()); 
-    // 2）用 replace 跳中转（不留历史记录）
-    router.replace('/empty');
-    // 3）下一帧再 replace 回来，此时组件会重新挂载
-    nextTick(() => {
-      router.replace(routeKey.value);
-    });
+    routeKey.value = `/createNewChat?_t=${Date.now()}`
+    await router.replace('/empty')
+    await nextTick()
+    await router.replace(routeKey.value)
   } else {
-    // 不在当前页就正常 push
-    router.push('/createNewChat');
+    await router.push('/createNewChat')
   }
+
+  await chatStore.fetchMessages()
 }
 
+// 用来记录上一次的数据快照
+let prevKeys: string[] = []
+
+// 合并成一个 watch：监听 chatStore.data 变化
 watch(
-  () => route.fullPath,
-  (newPath) => {
-    if (newPath === '/createNewChat') {
-      routeKey.value = `/createNewChat?_${Date.now()}`;
-    } else {
-      routeKey.value = newPath;
+  () => chatStore.data,
+  (newData, oldData) => {
+    const newKeys = Object.keys(newData)
+    const oldKeys = Object.keys(oldData || {})
+
+    // 条件1：当前路由必须是 /createNewChat
+    const isCreateRoute = route.path === '/createNewChat'
+
+    // 条件2：新增了 id（newKeys 比 oldKeys 多）
+    const hasNewKey = newKeys.length > oldKeys.length
+
+    // 条件3：新增的那条记录里必须有 ques
+    const newKey = newKeys.find(k => !oldKeys.includes(k))
+    const hasQues = newKey && newData[newKey]?.ques
+
+    if (isCreateRoute && hasNewKey && hasQues) {
+      console.log('✅ 检测到新会话（含 ques），自动刷新历史记录')
+      // 你可以在这里做额外逻辑，比如滚动到顶部、提示用户等
     }
-  }
-);
+
+    // 更新快照
+    prevKeys = newKeys
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
