@@ -17,7 +17,7 @@ class MultipleAgent():
 
         self.origin_agent = OriginAgent(config_url=self.config_path, database_url=self.database_path, prompt="你是一个智能助手，使用用中文回答，你需要提取和用户查询结果最接近的数据库查询结果，以此来回答用户输入,注意，请重点关注用户输入！！！如果查询没有结果，就忽略查询，自行对用户输入进行回答。用户输入和数据库查询结果：{input}")
         self.final_agent = None
-        self.search_agent = SearchAgent("./app/faiss_db","law_index", database_url=self.database_path, config_url=self.config_path)
+        self.search_agent = SearchAgent("app/faiss_db","law_index", database_url=self.database_path, config_url=self.config_path)
         self.agent_db=AgentDB(os.path.abspath(os.path.join(os.path.dirname(__file__), "./history_db/multiply.db/")))
         self.username = ""
         self.query = ""

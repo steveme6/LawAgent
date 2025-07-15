@@ -10,10 +10,11 @@ from collections import defaultdict
 
 
 from main import MultipleAgent
+from app.agent_db import AgentDB
 
 app = FastAPI()
 
-agent = MultipleAgent()
+agent_db = AgentDB('./history_db/multiply.db/')
 
 # 测试回答
 markdown =  """
@@ -61,7 +62,7 @@ async def get_root():
 # }
 @app.get("/chat/talks")
 async def read_talks():
-    rows = agent.agent_db.select_all()
+    rows = agent_db.select_all()
     # return rows
     records = dict()
     for r in rows:
@@ -81,7 +82,7 @@ async def read_talks():
 # 获取所有对话
 @app.get("/chat/talk_id")
 async def read_talk_id():
-    talks = agent.agent_db.get_usernames()
+    talks = agent_db.get_usernames()
     return talks
 
 # 创建一个新的对话
@@ -95,6 +96,7 @@ async def new_talk():
 # 用户提出一个问题, 返回一个回答并存入数据库
 @app.post("/chat/{talk_id}")
 async def add_message_to_talk(talk_id: str, request: Request):
+    new_agent = MultipleAgent()
     print(talk_id)
     global new_id
     try:
@@ -106,18 +108,18 @@ async def add_message_to_talk(talk_id: str, request: Request):
     async def generate_with_save(talk_id : str, content):
         print(f"ques: {content}")
         try:
-            talks = agent.agent_db.get_usernames()
+            talks = new_agent.agent_db.get_usernames()
             talks.append(new_id)
             print(f"talk_id : {talk_id}")
             print(f"new_id : {new_id}")
             print(talks)
             if talk_id  in talks:
-                async for chunk in agent.run(query=content, username=str(talk_id)):
+                async for chunk in new_agent.run(query=content, username=str(talk_id)):
                     for char in chunk:
                         yield char
                         # print(char)
                         await asyncio.sleep(0.05)  # 控制输出速度（可选）
-                agent.save_history()
+                new_agent.save_history()
             else:
                 print('error: 不允许的talk_id')
                 yield 'error: 不允许的talk_id'
@@ -134,11 +136,11 @@ async def add_message_to_talk(talk_id: str, request: Request):
 @app.delete("/chat/{talk_id}")
 async def delete_message_from_talk(talk_id: str):
     print(talk_id)
-    agent.agent_db.delete_history(talk_id)
+    agent_db.delete_history(talk_id)
     return True
 
 # 获取指定对话的历史记录
 @app.get("/chat/{talks_id}/records")
 async def read_item(talks_id: str):
     # 返回对应对话的所有session
-    return agent.agent_db.select_query(talks_id)
+    return agent_db.select_query(talks_id)
