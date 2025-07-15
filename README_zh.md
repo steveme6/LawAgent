@@ -1,7 +1,9 @@
 简体中文|[English](./README.md)  
 本项目提供了一个用于法律的智能体，可以提供知识问答，采用faiss向量检索以及langchain。
-# 快速使用
 
+# 快速使用
+在使用之前请本地安装好ollama  
+并且拉取一个LLM模型，Embedding模型，在config目录下修改api地址，以及模型名称。  
 ## 使用uv（推荐）
 
 ---

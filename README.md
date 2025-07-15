@@ -1,6 +1,14 @@
 [简体中文](./README_zh.md)|English
 # Installation Guide
 This project provides an intelligent agent for legal applications, offering knowledge-based Q&A functionality utilizing Faiss vector retrieval and LangChain.
+1. Install Ollama locally as per the instructions on the official website (https://ollama.com/).  
+2. Pull the desired LLM model and Embedding model using the following commands in your terminal:  
+     ollama pull <llm_model_name>   # e.g., ollama pull llama3  
+     ollama pull <embedding_model_name>   # e.g., ollama pull nomic-embed-text  
+3. Navigate to the config directory of your project and edit the configuration file (e.g., config.yaml or config.json). Update the following settings:  
+     - Set the API base URL to the local Ollama server (default: http://localhost:11434)  
+     - Set the LLM model name to the one you pulled (e.g., "llama3")  
+     - Set the Embedding model name to the one you pulled (e.g., "nomic-embed-text")  
 
 ## Using uv (Recommended)
 ---
