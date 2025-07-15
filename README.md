@@ -9,12 +9,18 @@ This project provides an intelligent agent for legal applications, offering know
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-2. Run the program  
+2. Install git lfs and pull large files  
+```bash
+git lfs install
+git lfs pull
+```
+
+3. Run the program  
 ```bash
 uv run run.py
-#install nvm
+# install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-#restart bash
+# restart bash
 nvm install
 cd web/frontend
 npm install
@@ -31,13 +37,11 @@ pip install -r requirements.txt
 3. Run the program
 ```bash
 python run.py
-#install nvm
+# install nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-#restart bash
+# restart bash
 nvm install
 cd web/frontend
 npm install
 npm run dev
 ```
----
-
