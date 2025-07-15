@@ -26,3 +26,15 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+---
+
+To start the frontend, go to the `web/frontend` directory and run the following commands to install dependencies and start the development server:
+
+```bash
+cd web/frontend
+npm install
+npm run dev
+```
+
+---
