@@ -12,12 +12,18 @@
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-2. 运行项目  
+2. 安装 git lfs 并拉取大文件  
+```bash
+git lfs install
+git lfs pull
+```
+
+3. 运行项目  
 ```bash
 uv run run.py
-#安装 nvm
+# 安装 nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-#重启 bash
+# 重启 bash
 nvm install
 cd web/frontend
 npm install
@@ -25,23 +31,21 @@ npm run dev
 ```
 ---
 
-## Using Python
+## 使用 Python
 
-1. Install Python 3.12  
-2. Install dependencies  
+1. 安装 Python 3.12  
+2. 安装依赖  
 ```bash
 pip install -r requirements.txt
 ```
-3. Run the program
+3. 运行项目
 ```bash
 python run.py
-#安装 nvm
+# 安装 nvm
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-#重启 bash
+# 重启 bash
 nvm install
 cd web/frontend
 npm install
 npm run dev
 ```
----
-
