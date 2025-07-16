@@ -14,13 +14,15 @@ class SearchAgent:
     def __init__(self,folder_path: str,index_name: str,database_url:str,config_url:str):
         config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config/config_embedding.ini"))
         self.embedding = FaissEmbeddings(config_path,folder_path,index_name)
-        self.prompt = "你是一个生成查询的智能体，你只需要输出查询的一个关键词即可，如用户输入“鹦鹉法规”，你输出：鹦鹉，用户输入:{input}"
+        self.prompt = "你是一个生成查询的智能体，你需要判断用户是否需要生成法律规定查询，即有相关于法律的问题，如果需要你只需要输出查询的一个关键词即可，如用户输入“鹦鹉法规”，你输出：鹦鹉，不需要的话，输出nosearch.用户输入:{input}"
         self.origin = OriginAgent(config_url=config_url,database_url=database_url,prompt=self.prompt)
     async def search(self,query,fil: dict = None):
         chain = self.origin.return_chain()
         result = chain.invoke(query)
         output = extract_output(result)
         print(str(output))
+        if output=='nosearch':
+            return []
         new_output = str(output)
         search_result = self.embedding.research(new_output,k=128718,fil=fil)
         first_results = []

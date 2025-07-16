@@ -19,6 +19,9 @@ agent_db = AgentDB('./history_db/multiply.db/')
 # 测试回答
 markdown =  """
 #### 以下是模板回答
+</think>
+你好
+<think >
 
 This is a **bold** text and this is *italic*.
 
@@ -66,7 +69,7 @@ async def read_talks():
     # return rows
     records = dict()
     for r in rows:
-        a_record = {'role': 'assistant', 'id': r[0], 'createAt': r[2], 'content': r[5]+"\n回答\n"+r[6]}
+        a_record = {'role': 'assistant', 'id': r[0], 'createAt': r[2], 'content': "\n\n#### 问答agent:\n\n"+r[5]+"\n\n#### 总结agent:\n\n"+r[6]}
         user_record = {'role': 'user', 'id': r[0], 'createAt': r[2], 'content': r[3]}
         if r[1] in records:
             records[r[1]]['record'].append(user_record)
@@ -110,15 +113,19 @@ async def add_message_to_talk(talk_id: str, request: Request):
         try:
             talks = new_agent.agent_db.get_usernames()
             talks.append(new_id)
-            print(f"talk_id : {talk_id}")
-            print(f"new_id : {new_id}")
+            # print(f"talk_id : {talk_id}")
+            # print(f"new_id : {new_id}")
             print(talks)
             if talk_id  in talks:
                 async for chunk in new_agent.run(query=content, username=str(talk_id)):
-                    for char in chunk:
-                        yield char
-                        # print(char)
-                        await asyncio.sleep(0.05)  # 控制输出速度（可选）
+                    # for char in chunk:
+                        # yield char
+                    if chunk == '<think>':
+                        chunk = '<!--'
+                    elif chunk == '</think>':
+                        chunk = '-->'
+                    yield chunk
+                    await asyncio.sleep(0.05)  # 控制输出速度（可选）
                 new_agent.save_history()
             else:
                 print('error: 不允许的talk_id')
