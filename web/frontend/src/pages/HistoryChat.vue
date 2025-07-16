@@ -50,7 +50,7 @@ async function del(id: string) {
 
   try {
     // 1) 真正删除服务器数据
-    await fetch(`http://localhost:8000/chat/${id}`, {
+    await fetch(`http://47.94.240.154:8000/chat/${id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });
