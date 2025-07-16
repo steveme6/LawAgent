@@ -53,7 +53,7 @@ class MultipleAgent():
         # yield "查询agent查询结果:\n"
         # yield new_query
 
-        yield "\n问答agent:\n\n\n"
+        yield "\n\n### 问答agent:\n\n"
         history_list = self.agent_db.select_query(username)
         if history_list:
             row = history_list[0]
@@ -64,13 +64,21 @@ class MultipleAgent():
         else:
             history = {}
         async for word in self.origin_agent.ask_agent("上一对话历史记录："+str(history)+"\n数据库查询结果如下："+str(new_query)+"\n请注意用户的输入是："+query):
+            if word == '<think>':
+                word = '<!--'
+            elif word == '</think>':
+                word = '-->'
             self.origin_response+=word
             yield word
         new_results = extract_output(self.origin_agent.result)
-        yield "\n总结agent:\n\n\n"
+        yield "\n\n### 总结agent:\n\n"
 
         self.final_agent = FinalAgent(database_url=self.database_path,config_url=self.config_path,last_result=str(new_results))
         async for chunk in self.final_agent.conclusion():
+            if chunk == '<think>':
+                chunk = '<!--'
+            elif chunk == '</think>':
+                chunk = '-->'
             self.final_response+=chunk
             yield chunk
 
